@@ -42,12 +42,12 @@ import torch.distributed as dist
 random.seed(1)
 np.random.seed(1) 
 torch.manual_seed(1) 
-torch.cuda.manual_seed(1)
+torch.cuda.manual_seed_all(1)
 
 
 #cudaid=0
 metrics=['group_auc','mean_mrr','ndcg@5;10']
-lr=1e-4
+lr=2e-5
 T_warm=5000
 all_iteration=50000
 
@@ -339,7 +339,7 @@ def train(cudaid, args,model):
                     writer.add_scalar('Loss/train', accum_batch_loss/accumulation_steps, iteration)
                     writer.add_scalar('Ltr/train', optimizer.param_groups[0]['lr'], iteration)
                 accum_batch_loss=0
-                if iteration%1000==0 :
+                if iteration%2==0 :
                     torch.cuda.empty_cache()
                     model.eval()
                     labels,preds,imp_indexes = test(model,args,cudaid)
