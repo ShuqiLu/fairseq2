@@ -7,7 +7,6 @@ import sys
 import torch
 import argparse
 import os
-from model_plain_bert_dot4 import  Plain_bert
 from fairseq.models.roberta import RobertaModel
 from utils_sample import NewsIterator
 from utils_sample import cal_metric
@@ -94,6 +93,14 @@ def parse_args():
                     help="local_rank for distributed training on gpus")
     parser.add_argument("--model_file",
                     type=str,
+                    help="local_rank for distributed training on gpus")
+    parser.add_argument("--news_model_file",
+                    type=str,
+                    default=None,
+                    help="local_rank for distributed training on gpus")
+    parser.add_argument("--model_type",
+                    type=str,
+                    default='dot4',
                     help="local_rank for distributed training on gpus")
 
 
@@ -386,6 +393,10 @@ if __name__ == '__main__':
     torch.cuda.manual_seed(1)
     #main()
     args = parse_args()
+    if args.model_type=='dot4':
+        from model_plain_bert_dot4 import  Plain_bert
+    elif args.model_type=='twotower_dot4':
+        from model_twotower_bert_dot4 import  Plain_bert
     model=Plain_bert(args)
     #optimizer = torch.optim.Adam(model.parameters(), lr=lr,betas=(0.9,0.98),eps=1e-6,weight_decay=0.0)
     
@@ -411,8 +422,16 @@ if __name__ == '__main__':
     for name in save_model['model']:
         if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
             pretrained_dict['encoder'+name[24:]]=save_model['model'][name]
+    if args.news_model_file is not None:
+        save_model2=torch.load(args.model_file, map_location=lambda storage, loc: storage)
+        for name in save_model2['model']:
+            if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
+                pretrained_dict['news_encoder'+name[24:]]=save_model['model'][name]
 
-    assert len(model_dict)-4==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
+    if 'twotower' not in args.model_type:
+        assert len(model_dict)-4==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
+    else:
+        assert len(model_dict)-8==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
 
     print(pretrained_dict.keys(),len(pretrained_dict.keys()))
     model_dict.update(pretrained_dict)

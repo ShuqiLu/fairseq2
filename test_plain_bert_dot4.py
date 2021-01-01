@@ -360,6 +360,8 @@ if __name__ == '__main__':
     elif args.model_version=='hf':
         from model_plain_bert_hf import Plain_bert
         model=Plain_bert(args)
+    elif args.model_type=='twotower_dot4':
+        from model_twotower_bert_dot4 import  Plain_bert
 
     iteration=0
     batch_t=0
