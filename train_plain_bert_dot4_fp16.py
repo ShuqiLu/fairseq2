@@ -415,6 +415,7 @@ if __name__ == '__main__':
 
     #finetune my rroduced roberta
     model_dict = model.state_dict()
+    print('load: ',args.model_file)
     save_model=torch.load(args.model_file, map_location=lambda storage, loc: storage)
     #print(save_model['model'].keys())
     pretrained_dict= {}
@@ -423,10 +424,11 @@ if __name__ == '__main__':
         if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
             pretrained_dict['encoder'+name[24:]]=save_model['model'][name]
     if args.news_model_file is not None:
-        save_model2=torch.load(args.model_file, map_location=lambda storage, loc: storage)
+        print('load: ',args.news_model_file)
+        save_model2=torch.load(args.news_model_file, map_location=lambda storage, loc: storage)
         for name in save_model2['model']:
             if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
-                pretrained_dict['news_encoder'+name[24:]]=save_model['model'][name]
+                pretrained_dict['news_encoder'+name[24:]]=save_model2['model'][name]
 
     if 'twotower' not in args.model_type:
         assert len(model_dict)-4==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
