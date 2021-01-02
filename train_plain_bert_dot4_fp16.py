@@ -48,7 +48,7 @@ torch.cuda.manual_seed_all(1)
 metrics=['group_auc','mean_mrr','ndcg@5;10']
 lr=2e-5
 T_warm=5000
-all_iteration=50000
+all_iteration=300000
 
 
 def parse_args():
