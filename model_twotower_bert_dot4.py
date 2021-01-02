@@ -75,6 +75,7 @@ class Plain_bert(nn.Module):#
         self.news_dense = nn.Linear(embedding_dim, embedding_dim)
         self.news_layer_norm = LayerNorm(embedding_dim)
         init_bert_params(self.dense)
+        init_bert_params(self.news_dense)
         self.encoder=TransformerSentenceEncoder(
                 padding_idx=1,
                 vocab_size=32769,
