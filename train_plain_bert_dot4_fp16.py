@@ -46,7 +46,7 @@ torch.cuda.manual_seed_all(1)
 
 #cudaid=0
 metrics=['group_auc','mean_mrr','ndcg@5;10']
-lr=2e-5
+lr=1e-4
 T_warm=5000
 all_iteration=300000
 
