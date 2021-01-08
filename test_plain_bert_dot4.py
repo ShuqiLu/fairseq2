@@ -162,7 +162,7 @@ def parse_args():
     parser.add_argument("--feature_file",
                     type=str,
                     help="local_rank for distributed training on gpus")
-    parser.add_argument("--model_version",
+    parser.add_argument("--model_type",
                     type=str,
                     help="local_rank for distributed training on gpus")
     # parser.add_argument("--size",
@@ -303,7 +303,7 @@ def exact_result3():
         #f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/hf_'+str(num)+'.txt','r').readlines() 
         #f1=open('../data/res_roberta_dot4_abs_cat_fp16_add2_'+str(num)+'.txt','r').readlines() #res_roberta_dot_abstract_63.txt
 
-        f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_decoder220_'+str(num)+'.txt','r').readlines()
+        f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_model260_'+str(num)+'.txt','r').readlines()
         #f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_'+str(num)+'.txt','r').readlines()
         for line in f1:
             line=line.strip().split(' ')
@@ -330,8 +330,8 @@ if __name__ == '__main__':
     # flag=sys.argv[1]
     # exact_result(flag)
     
-    exact_result3()
-    assert 1==0
+    # exact_result3()
+    # assert 1==0
 
 
 
@@ -347,17 +347,17 @@ if __name__ == '__main__':
     #main()
     # mydict=utils.load_dict(os.path.join(args.data_dir,'roberta.base'))
     # model=Plain_bert(padding_idx=mydict['<pad>'],vocab_size=len(mydict))
-    if args.model_version=='dot4':
+    if args.model_type=='dot4':
         from model_plain_bert_dot4 import  Plain_bert
         model=Plain_bert(args)
-    elif args.model_version=='dot3':
+    elif args.model_type=='dot3':
         from model_plain_bert_dot3 import  Plain_bert
         model=Plain_bert(args)
-    elif args.model_version=='dot2':
+    elif args.model_type=='dot2':
         from model_plain_bert_dot2 import  Plain_bert
         mydict=utils.load_dict(os.path.join(args.data_dir,'roberta.base'))
         model=Plain_bert(padding_idx=mydict['<pad>'],vocab_size=len(mydict))
-    elif args.model_version=='hf':
+    elif args.model_type=='hf':
         from model_plain_bert_hf import Plain_bert
         model=Plain_bert(args)
     elif args.model_type=='twotower_dot4':

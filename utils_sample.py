@@ -317,6 +317,7 @@ class NewsIterator(object):
         self.last=-1
         self.reverse=-1
         self.non_reverse=-1
+        #self.test_rank={10:}
 
         if field=='sparse_16_title':
             self.his_len=16
@@ -751,8 +752,10 @@ class NewsIterator(object):
             rd=open(infile, "r").readlines()
         else:
             rd=open(infile, "r").readlines()
-            length_t=int(len(rd)/size)+1
-            rd=rd[rank*length_t:(rank+1)*length_t]
+            # length_t=int(len(rd)/size)+1
+            # rd=rd[rank*length_t:(rank+1)*length_t]
+            #rd=open(infile+self.test_file[rank], "r").readlines()
+
 
         #rd=open(infile, "r").readlines()
         #with open(infile, "r") as rd:

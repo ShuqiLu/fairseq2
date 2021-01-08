@@ -45,10 +45,15 @@ torch.cuda.manual_seed_all(1)
 
 
 #cudaid=0
-metrics=['group_auc','mean_mrr','ndcg@5;10']
-lr=2e-5
-T_warm=10000
-all_iteration=300000
+# metrics=['group_auc','mean_mrr','ndcg@5;10']
+# lr=2e-5
+# T_warm=10000
+# all_iteration=300000
+
+metrics=['group_auc']
+lr=1e-4
+T_warm=5000
+all_iteration=34431
 
 
 def parse_args():
@@ -78,6 +83,10 @@ def parse_args():
                     default=1,
                     help="local_rank for distributed training on gpus")
     parser.add_argument("--gpu_size",
+                    type=int,
+                    default=1,
+                    help="local_rank for distributed training on gpus")
+    parser.add_argument("--test_gpu_size",
                     type=int,
                     default=1,
                     help="local_rank for distributed training on gpus")
@@ -191,61 +200,90 @@ def all_gather(data):
 
     return data_list
 
-def test(model,args,cudaid):
+def test(model,args,cudaid,test_data,eval_step=0):
     preds = np.array([])
     labels = np.array([])
     imp_indexes = np.array([])
     metrics=['group_auc']
-    test_file=os.path.join(args.data_dir, args.test_data_file)  
+    #if cudaid==0:
+    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:47,7:300}
+    test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
+
+    #test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid]))
+    w=open(os.path.join(args.save_dir,'test_'+str(test_file_dict[cudaid])+'_step'+str(eval_step)),'w') 
+    print('log file: ',os.path.join(args.save_dir,'test_'+str(test_file_dict[cudaid])+'_step'+str(eval_step))) 
     preds = []
     labels = []
     imp_indexes = []
-    if args.test_feature_file is not None:
-        feature_file=os.path.join(args.data_dir,args.test_feature_file)
-    else:
-        feature_file=os.path.join(args.data_dir,args.feature_file)
-    iterator=NewsIterator(batch_size=1, npratio=-1,feature_file=feature_file,field=args.field,fp16=True)
+    # if args.test_feature_file is not None:
+    #     feature_file=os.path.join(args.data_dir,args.test_feature_file)
+    # else:
+    #     feature_file=os.path.join(args.data_dir,args.feature_file)
+
+    #iterator=NewsIterator(batch_size=args.test_gpu_size, npratio=-1,feature_file=feature_file,field=args.field,fp16=True)
     print('test...')
     #cudaid=0
     #model = nn.DataParallel(model, device_ids=list(range(args.size)))
     step=0
     with torch.no_grad():
-        data_batch=iterator.load_test_data_from_file(test_file,None,rank=cudaid,size=args.size)
+        #data_batch=iterator.load_test_data_from_file(test_file,None,rank=cudaid,size=args.size)
+        # data_batch=iterator.load_test_data_from_file(test_file,args.can_length,)
+        data_batch=test_data
         batch_t=0
-        for  imp_index , user_index, his_id, candidate_id , label, _  in data_batch:
+        for  imp_index,_, his_id, candidate_id , label, can_len  in data_batch:
             batch_t+=len(candidate_id)
             his_id=his_id.cuda(cudaid)
             candidate_id= candidate_id.cuda(cudaid)
-            logit=model(his_id,candidate_id,None,mode='validation')
+            logit=model(his_id,candidate_id,None,mode='dev')
 
-            #print('???',his_id.shape,logit.shape,candidate_id.shape)
-            # logit=list(np.reshape(np.array(logit.data.cpu()), -1))
-            # label=list(np.reshape(np.array(label), -1))
-            # imp_index=list(np.reshape(np.array(imp_index), -1))
+            # logit=np.reshape(np.array(logit.data.cpu()), -1)
+            # label=np.reshape(np.array(label), -1)
 
-            logit=np.reshape(np.array(logit.data.cpu()), -1)
-            label=np.reshape(np.array(label), -1)
-            #imp_index=np.reshape(np.array(imp_index), -1)
+            # assert len(imp_index)==1
+            # imp_index=np.repeat(imp_index,len(logit))
 
-            assert len(imp_index)==1
-            #imp_index=imp_index*len(logit)
-            imp_index=np.repeat(imp_index,len(logit))
-
-            assert len(logit)==len(label),(len(logit),len(label))
-            assert len(logit)==len(imp_index)
-            assert np.sum(label)!=0
+            # assert len(logit)==len(label),(len(logit),len(label))
+            # assert len(logit)==len(imp_index)
+            # assert np.sum(label)!=0
 
 
+            logit=np.array(logit.cpu())
+            imp_index=np.reshape(np.array(imp_index), -1)
+            assert len(imp_index)==len(logit),(len(imp_index),len(logit))
+
+            imp_index_t=[]
+            label_t=[]
+            logit_t=[]
+  
+            for i in range(len(imp_index)):
+                # w.write('imp_index:'+str(imp_index[i])+' '+' '.join([str(logit[i][j]) for j in range(can_len[i][0])]))
+                # w.write('\n')
+                for j in range(can_len[i][0]):
+                    assert len(label[i])==can_len[i][0]
+                    w.write('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i][j])+' label: '+str(label[i][j])+'\n')
+                    imp_index_t.append(imp_index[i])
+                    logit_t.append(logit[i][j])
+                    label_t.append(label[i][j])
+                    #print('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i][j])+' label: '+str(label[i][j]))
+                    # w.write('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i][j])+'\n')
+                    # print('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i][j]))
+                    
+                # print('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i])+' label: '+str(label[i]))
+                # w.write('imp_index: '+str(imp_index[i])+' logit: '+str(logit[i])+' label: '+str(label[i])+'\n')
+            #assert 1==0
+            #print('imp_index: ',imp_index[-1])
             # labels.extend(label)
             # preds.extend(logit)
             # imp_indexes.extend(imp_index)
-            labels=np.concatenate((labels,label),axis=0)
-            preds=np.concatenate((preds,logit),axis=0)
-            imp_indexes=np.concatenate((imp_indexes,imp_index),axis=0)
+            labels=np.concatenate((labels,label_t),axis=0)
+            preds=np.concatenate((preds,logit_t),axis=0)
+            imp_indexes=np.concatenate((imp_indexes,imp_index_t),axis=0)
             step+=1
             if step%100==0:
                 print('all data: ',len(labels),cudaid)
                 #return labels,preds,imp_indexes
+                #break
+    w.close()
 
     # group_labels, group_preds = group_labels_func(labels, preds, imp_indexes)
     # res = cal_metric(group_labels, group_preds, metrics)
@@ -270,6 +308,21 @@ def train(cudaid, args,model):
     print('rank: ',cudaid)
     torch.cuda.set_device(cudaid)
     model.cuda(cudaid)
+
+
+    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:47,7:300}
+    test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
+    test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid])+'.txt')
+    if args.test_feature_file is not None:
+        feature_file=os.path.join(args.data_dir,args.test_feature_file)
+    else:
+        feature_file=os.path.join(args.data_dir,args.feature_file)
+    test_data=[]
+    iterator=NewsIterator(batch_size=test_gpu_dict[cudaid], npratio=-1,feature_file=feature_file,field=args.field,fp16=True)
+    test_data_batch=iterator.load_test_data_from_file(test_file,test_file_dict[cudaid],)
+    for  imp_index,user_index, his_id, candidate_id , label, can_length  in test_data_batch:
+        test_data.append([imp_index,user_index, his_id, candidate_id , label, can_length])
+    print('test_data load ok...',test_file)
 
     accumulation_steps=int(args.batch_size/args.size/args.gpu_size)
     optimizer = apex.optimizers.FusedLAMB(model.parameters(), lr=lr,betas=(0.9,0.98),eps=1e-6,weight_decay=0.0,max_grad_norm=1.0)
@@ -346,10 +399,10 @@ def train(cudaid, args,model):
                     writer.add_scalar('Loss/train', accum_batch_loss/accumulation_steps, iteration)
                     writer.add_scalar('Ltr/train', optimizer.param_groups[0]['lr'], iteration)
                 accum_batch_loss=0
-                if iteration%1000==0 :
+                if iteration%500==0 and iteration>=5000:
                     torch.cuda.empty_cache()
                     model.eval()
-                    labels,preds,imp_indexes = test(model,args,cudaid)
+                    labels,preds,imp_indexes = test(model,args,cudaid,test_data,eval_step=step)
                     pred_pkl={'labels':labels,'preds':preds,'imp_indexes':imp_indexes}
                     all_preds=all_gather(pred_pkl)
                     if cudaid==0:
@@ -393,7 +446,7 @@ if __name__ == '__main__':
     torch.cuda.manual_seed(1)
     #main()
     args = parse_args()
-    if args.model_type=='dot4':
+    if 'dot4' in args.model_type:
         from model_plain_bert_dot4 import  Plain_bert
     elif args.model_type=='twotower_dot4':
         from model_twotower_bert_dot4 import  Plain_bert
@@ -403,32 +456,34 @@ if __name__ == '__main__':
     # for name, param in model.named_parameters():
     #     print(name,param.shape,param.requires_grad)
 
-    #roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file='model.pt')
-    # roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file=args.model_file)
-    # model_dict = model.state_dict()
-    # pretrained_dict={}
-    # for name,parameters in roberta.named_parameters():
-    #     if  'lm_head' not in name:
-    #         pretrained_dict['encoder.'+name[31:]]=parameters
+    if 'fairseq_base' in args.model_type:
+        #roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file='model.pt')
+        #if 'base' in args.model_type:
+        roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file=args.model_file)
+        model_dict = model.state_dict()
+        pretrained_dict={}
+        for name,parameters in roberta.named_parameters():
+            if  'lm_head' not in name:
+                pretrained_dict['encoder.'+name[31:]]=parameters
+        #else:
 
-
-
-    #finetune my rroduced roberta
-    model_dict = model.state_dict()
-    print('load: ',args.model_file)
-    save_model=torch.load(args.model_file, map_location=lambda storage, loc: storage)
-    #print(save_model['model'].keys())
-    pretrained_dict= {}
-    #print('???',save_model['model'].keys())
-    for name in save_model['model']:
-        if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
-            pretrained_dict['encoder'+name[24:]]=save_model['model'][name]
-    if args.news_model_file is not None:
-        print('load: ',args.news_model_file)
-        save_model2=torch.load(args.news_model_file, map_location=lambda storage, loc: storage)
-        for name in save_model2['model']:
+    else:
+        #finetune my rroduced roberta
+        model_dict = model.state_dict()
+        print('load: ',args.model_file)
+        save_model=torch.load(args.model_file, map_location=lambda storage, loc: storage)
+        #print(save_model['model'].keys())
+        pretrained_dict= {}
+        #print('???',save_model['model'].keys())
+        for name in save_model['model']:
             if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
-                pretrained_dict['news_encoder'+name[24:]]=save_model2['model'][name]
+                pretrained_dict['encoder'+name[24:]]=save_model['model'][name]
+        if args.news_model_file is not None:
+            print('load: ',args.news_model_file)
+            save_model2=torch.load(args.news_model_file, map_location=lambda storage, loc: storage)
+            for name in save_model2['model']:
+                if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
+                    pretrained_dict['news_encoder'+name[24:]]=save_model2['model'][name]
 
     if 'twotower' not in args.model_type:
         assert len(model_dict)-4==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)

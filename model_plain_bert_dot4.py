@@ -73,9 +73,13 @@ class Plain_bert(nn.Module):#
         self.dense = nn.Linear(embedding_dim, embedding_dim)
         self.layer_norm = LayerNorm(embedding_dim)
         init_bert_params(self.dense)
+        if args.model_type=='fairseq_dot4':
+            vocab_size=50265
+        else:
+            vocab_size=32769
         self.encoder=TransformerSentenceEncoder(
                 padding_idx=1,
-                vocab_size=32769,
+                vocab_size=vocab_size,
                 num_encoder_layers=12,
                 embedding_dim=768,
                 ffn_embedding_dim=3072,
@@ -120,8 +124,10 @@ class Plain_bert(nn.Module):#
 
 
         res=torch.matmul(his_features,can_features.transpose(1,2))
-        if mode !='train':
+        if mode =='validation':
             return res.reshape(-1)#,label.view(-1)
+        elif mode=='dev':
+            return res.squeeze(1)
 
         res=res.reshape(-1,2)
         #print('???',res,sample_size)
