@@ -207,7 +207,7 @@ def test(model,args,cudaid,test_data,eval_step=0):
     metrics=['group_auc']
     #if cudaid==0:
     test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
-    test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
+    #test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
 
     #test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid]))
     w=open(os.path.join(args.save_dir,'test_'+str(test_file_dict[cudaid])+'_step'+str(eval_step)),'w') 
@@ -312,6 +312,8 @@ def train(cudaid, args,model):
 
     test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
     test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
+    if 'fairseq' in args.model_type:
+        test_gpu_dict={0:80,1:40,2:25,3:20,4:15,5:11,6:8,7:4}
     test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid])+'.txt')
     if args.test_feature_file is not None:
         feature_file=os.path.join(args.data_dir,args.test_feature_file)

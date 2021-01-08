@@ -347,7 +347,7 @@ if __name__ == '__main__':
     #main()
     # mydict=utils.load_dict(os.path.join(args.data_dir,'roberta.base'))
     # model=Plain_bert(padding_idx=mydict['<pad>'],vocab_size=len(mydict))
-    if args.model_type=='dot4':
+    if 'dot4' in args.model_type:
         from model_plain_bert_dot4 import  Plain_bert
         model=Plain_bert(args)
     elif args.model_type=='dot3':
@@ -380,34 +380,62 @@ if __name__ == '__main__':
     #print(model.state_dict()['score3.0.bias'])
 
     # roberta = RobertaModel.from_pretrained('./model/roberta.base', checkpoint_file='model.pt')
-    model_file=os.path.join(args.model_file)
+    # model_file=os.path.join(args.model_file)
 
-    save_model=torch.load(model_file, map_location=lambda storage, loc: storage)
+    # save_model=torch.load(model_file, map_location=lambda storage, loc: storage)
     
-    pretrained_dict={}
-    #for name,parameters in roberta.named_parameters():
-    for name in save_model:
-    #   if name[7:] == "score3.0.bias":
-    #       print(save_model[name])
-        #print(name,':',save_model[name].size())
-        #print(name,':',parameters.size())
-        # if ( 'layers' in name ):
-        #   pretrained_dict[name[31:]]=parameters
-        # elif ('embed_positions.weight' in name or 'embed_tokens' in name or 'emb_layer_norm' in name):
-        #   pretrained_dict[name[31:]]=parameters
-        pretrained_dict[name[7:]]=save_model[name]
-        #pretrained_dict[name]=save_model[name]
-        # if 'dense_lm.weight' in name[7:] or 'dense_lm.bias' in name[7:] :
-        #     print(name ,save_model[name])
-        # elif 'lm_head.' in name:
-        #     pretrained_dict[name[14:]]=parameters
-    # print('----------------------------------------------------------')
-    print(pretrained_dict.keys())
-    #assert 1==0
+    # pretrained_dict={}
+    # for name in save_model:
+    #     pretrained_dict[name[7:]]=save_model[name]
+        
+    # print(pretrained_dict.keys())
+    # model_dict.update(pretrained_dict)
+    # model.load_state_dict(model_dict)
+    # model.cuda(args.cudaid)
+    # res=test(model,args)
+
+
+    if 'fairseq_base' in args.model_type:
+        #roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file='model.pt')
+        #if 'base' in args.model_type:
+        roberta = RobertaModel.from_pretrained(os.path.join(args.data_dir,'roberta.base'), checkpoint_file=args.model_file)
+        model_dict = model.state_dict()
+        pretrained_dict={}
+        for name,parameters in roberta.named_parameters():
+            if  'lm_head' not in name:
+                pretrained_dict['encoder.'+name[31:]]=parameters
+        #else:
+
+    else:
+        #finetune my rroduced roberta
+        model_dict = model.state_dict()
+        print('load: ',args.model_file)
+        save_model=torch.load(args.model_file, map_location=lambda storage, loc: storage)
+        #print(save_model['model'].keys())
+        pretrained_dict= {}
+        #print('???',save_model['model'].keys())
+        for name in save_model['model']:
+            if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
+                pretrained_dict['encoder'+name[24:]]=save_model['model'][name]
+        # if args.news_model_file is not None:
+        #     print('load: ',args.news_model_file)
+        #     save_model2=torch.load(args.news_model_file, map_location=lambda storage, loc: storage)
+        #     for name in save_model2['model']:
+        #         if 'lm_head' not in name and 'encoder' in name and 'decode' not in name:
+        #             pretrained_dict['news_encoder'+name[24:]]=save_model2['model'][name]
+
+    if 'twotower' not in args.model_type:
+        assert len(model_dict)-4==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
+    else:
+        assert len(model_dict)-8==len(pretrained_dict), (len(model_dict),len(pretrained_dict),model_dict,pretrained_dict)
+
+    print(pretrained_dict.keys(),len(pretrained_dict.keys()))
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
     model.cuda(args.cudaid)
     res=test(model,args)
+
+
     #print(res)
     #train(model,optimizer,cuda_num)
     # for epoch in range(5):
