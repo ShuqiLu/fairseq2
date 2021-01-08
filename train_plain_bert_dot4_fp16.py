@@ -206,7 +206,7 @@ def test(model,args,cudaid,test_data,eval_step=0):
     imp_indexes = np.array([])
     metrics=['group_auc']
     #if cudaid==0:
-    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:47,7:300}
+    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
     test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
 
     #test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid]))
@@ -310,7 +310,7 @@ def train(cudaid, args,model):
     model.cuda(cudaid)
 
 
-    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:47,7:300}
+    test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
     test_gpu_dict={0:90,1:45,2:30,3:22,4:17,5:13,6:10,7:5}
     test_file=os.path.join(args.data_dir, args.test_data_file+str(test_file_dict[cudaid])+'.txt')
     if args.test_feature_file is not None:
