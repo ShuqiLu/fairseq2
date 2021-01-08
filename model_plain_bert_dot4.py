@@ -73,7 +73,7 @@ class Plain_bert(nn.Module):#
         self.dense = nn.Linear(embedding_dim, embedding_dim)
         self.layer_norm = LayerNorm(embedding_dim)
         init_bert_params(self.dense)
-        if args.model_type=='fairseq_dot4':
+        if 'fairseq' in args.model_type:
             vocab_size=50265
         else:
             vocab_size=32769
