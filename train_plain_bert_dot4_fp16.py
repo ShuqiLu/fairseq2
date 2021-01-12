@@ -111,6 +111,10 @@ def parse_args():
                     type=str,
                     default='dot4',
                     help="local_rank for distributed training on gpus")
+    parser.add_argument("--eval_step",
+                    type=int,
+                    default=2500,
+                    help="local_rank for distributed training on gpus")
 
 
 
@@ -308,6 +312,7 @@ def train(cudaid, args,model):
     print('rank: ',cudaid)
     torch.cuda.set_device(cudaid)
     model.cuda(cudaid)
+    eval_step=args.eval_step
 
 
     test_file_dict={0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
@@ -402,12 +407,13 @@ def train(cudaid, args,model):
                     writer.add_scalar('Ltr/train', optimizer.param_groups[0]['lr'], iteration)
                 accum_batch_loss=0
                 # if iteration%500==0 and iteration>=5000:
-                if iteration%2500==0:
+                if iteration%eval_step==0:
                     torch.cuda.empty_cache()
                     model.eval()
                     labels,preds,imp_indexes = test(model,args,cudaid,test_data,eval_step=step)
                     pred_pkl={'labels':labels,'preds':preds,'imp_indexes':imp_indexes}
                     all_preds=all_gather(pred_pkl)
+                    step+=1
                     if cudaid==0:
                         labels=np.concatenate([ele['labels'] for ele in all_preds], axis=0)
                         preds=np.concatenate([ele['preds'] for ele in all_preds], axis=0)
@@ -419,7 +425,6 @@ def train(cudaid, args,model):
                         #auc=test(model,args)
                         print('valid auc: ', auc)
                         writer.add_scalar('valid/auc', auc, step)
-                        step+=1
                         if auc>best_score:
                             torch.save(model.state_dict(), os.path.join(args.save_dir,'Plain_robert_dot_best.pkl'))
                             best_score=auc
