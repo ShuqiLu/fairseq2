@@ -407,7 +407,7 @@ def train(cudaid, args,model):
                     writer.add_scalar('Ltr/train', optimizer.param_groups[0]['lr'], iteration)
                 accum_batch_loss=0
                 # if iteration%500==0 and iteration>=5000:
-                if iteration%eval_step==0:
+                if iteration%eval_step==0 and iteration>17500:
                     torch.cuda.empty_cache()
                     model.eval()
                     labels,preds,imp_indexes = test(model,args,cudaid,test_data,eval_step=step)
