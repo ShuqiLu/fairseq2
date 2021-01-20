@@ -298,12 +298,14 @@ def exact_result3():
     x=1
     flag=''
     count=0
-    for num in [20,40,60,90,120,150,240,300]:
+    {0:16,1:30,2:47,3:65,4:86,5:112,6:147,7:300}
+    for num in [16,30,47,65,86,112,147,300]:
     #for num in [20,40,60,80,100,120,140,160,180,200,220,240,260,280,300]:
         #f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/hf_'+str(num)+'.txt','r').readlines() 
         #f1=open('../data/res_roberta_dot4_abs_cat_fp16_add2_'+str(num)+'.txt','r').readlines() #res_roberta_dot_abstract_63.txt
 
-        f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_model260_'+str(num)+'.txt','r').readlines()
+        # f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_model260_'+str(num)+'.txt','r').readlines()
+        f1=open('/home/dihe/cudnn_file/recommender_shuqi/exp_01_15_01/save/test_'+str(num)+'_step29','r').readlines()
         #f1=open('/home/dihe/cudnn_file/recommender_shuqi/MIND_data/dev_res_'+str(num)+'.txt','r').readlines()
         for line in f1:
             line=line.strip().split(' ')
@@ -330,8 +332,8 @@ if __name__ == '__main__':
     # flag=sys.argv[1]
     # exact_result(flag)
     
-    # exact_result3()
-    # assert 1==0
+    exact_result3()
+    assert 1==0
 
 
 
